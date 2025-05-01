@@ -245,24 +245,24 @@ export default function Home() {
               {/* Testimonial Card */}
               <div className="flex flex-col justify-between rounded-lg border bg-background p-6 shadow-sm">
                  <blockquote className="text-sm text-muted-foreground italic mb-4">
-                  "Matastra's predictive capabilities have significantly reduced our
-                  unplanned outages. It's a game-changer for grid reliability."
+                  &quot;Matastra&apos;s predictive capabilities have significantly reduced our
+                  unplanned outages. It&apos;s a game-changer for grid reliability.&quot;
                  </blockquote>
                  <footer className="text-sm font-semibold">Jane Doe, Grid Operations Manager</footer>
               </div>
               {/* Testimonial Card */}
                <div className="flex flex-col justify-between rounded-lg border bg-background p-6 shadow-sm">
                  <blockquote className="text-sm text-muted-foreground italic mb-4">
-                  "The accuracy of the failure predictions is impressive. We can now
-                  schedule maintenance proactively, saving time and resources."
+                  &quot;The accuracy of the failure predictions is impressive. We can now
+                  schedule maintenance proactively, saving time and resources.&quot;
                  </blockquote>
                  <footer className="text-sm font-semibold">John Smith, Utility Engineer</footer>
               </div>
               {/* Testimonial Card */}
                <div className="flex flex-col justify-between rounded-lg border bg-background p-6 shadow-sm">
                  <blockquote className="text-sm text-muted-foreground italic mb-4">
-                  "The platform is intuitive and the alerts are easy to understand.
-                  Highly recommended for any modern utility aiming for resilience."
+                  &quot;The platform is intuitive and the alerts are easy to understand.
+                  Highly recommended for any modern utility aiming for resilience.&quot;
                  </blockquote>
                  <footer className="text-sm font-semibold">Alex Johnson, Head of Innovation</footer>
               </div>
