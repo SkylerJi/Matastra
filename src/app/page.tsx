@@ -1,7 +1,143 @@
+"use client"
 import Link from "next/link";
-import { Activity, AlertTriangle, Brain, ChevronRight, Clock, Globe, Shield, Sparkles, Zap, TrendingUp, Database, Network, LineChart } from "lucide-react";
+import { Activity, AlertTriangle, Brain, ChevronRight, Clock, Globe, Shield, Sparkles, Zap, TrendingUp, LineChart, Menu, X } from "lucide-react";
+import { useState, useEffect } from "react";
 
 export default function Home() {
+  // MOBILE MENU STATE MANAGEMENT
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  /* 
+  STATE EXPLANATION:
+  - useState is a React Hook that lets us add state to our component
+  - State = data that can change over time (like whether menu is open/closed)
+  - useState(false) creates state with initial value of false (menu starts closed)
+  - Returns an array: [currentValue, functionToUpdateValue]
+  - isMobileMenuOpen = current state (true/false)
+  - setIsMobileMenuOpen = function to update the state
+  
+  WHY WE NEED STATE:
+  - Mobile menu needs to open/close when user taps hamburger button
+  - React needs to know when to re-render the component with menu open/closed
+  - State changes trigger re-renders automatically
+  */
+  
+  // SCROLL-TRIGGERED IMAGE STATE
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  /* 
+  SCROLL IMAGE STATE EXPLANATION:
+  - Tracks which image should be displayed on the right side
+  - activeImageIndex = 0 shows first image, 1 shows second image
+  - Changes based on user's scroll position through the features section
+  - Creates dynamic, engaging scroll experience
+  */
+  
+  // SCROLL EVENT HANDLER
+  useEffect(() => {
+    const handleScroll = () => {
+      // Get the features section element
+      const featuresSection = document.getElementById('features');
+      if (!featuresSection) return;
+      
+      // Detect if we're on mobile/tablet (single column) or desktop (two column)
+      const isDesktop = window.innerWidth >= 1024; // lg breakpoint
+      
+      if (isDesktop) {
+        // DESKTOP LOGIC: Features and images are side-by-side
+        const rect = featuresSection.getBoundingClientRect();
+        const sectionTop = rect.top;
+        const sectionHeight = rect.height;
+        const windowHeight = window.innerHeight;
+        
+        // Desktop: Use improved scroll detection
+        if (sectionTop < windowHeight * 0.3 && sectionTop > -sectionHeight * 0.5) {
+          const viewportProgress = Math.max(0, Math.min(1, (windowHeight * 0.3 - sectionTop) / (sectionHeight * 0.8)));
+          // Desktop: Switch to second image sooner (at 30% progress instead of 50%)
+          setActiveImageIndex(viewportProgress > 0.3 ? 1 : 0);
+        } else if (sectionTop >= windowHeight * 0.3) {
+          setActiveImageIndex(0);
+        } else if (sectionTop <= -sectionHeight * 0.5) {
+          setActiveImageIndex(1);
+        }
+      } else {
+        // MOBILE/TABLET LOGIC: Features are above images (single column)
+        // Find the image container specifically since features scroll by first
+        const imageContainer = featuresSection.querySelector('[data-image-container]');
+        if (!imageContainer) return;
+        
+        const imageRect = imageContainer.getBoundingClientRect();
+        const imageTop = imageRect.top;
+        const imageHeight = imageRect.height;
+        const windowHeight = window.innerHeight;
+        
+        // Mobile: Only start tracking when images come into view
+        if (imageTop < windowHeight * 0.8) {
+          // Images are visible, now track scroll progress through image area
+          const imageProgress = Math.max(0, Math.min(1, (windowHeight * 0.8 - imageTop) / (imageHeight + windowHeight * 0.4)));
+          
+          // Mobile: Switch to second image later (at 70% progress instead of 50%)
+          setActiveImageIndex(imageProgress > 0.7 ? 1 : 0);
+        } else {
+          // Images haven't come into view yet - show first image
+          setActiveImageIndex(0);
+        }
+      }
+    };
+    
+    // Add scroll event listener
+    window.addEventListener('scroll', handleScroll);
+    // Add resize event listener to handle orientation changes
+    window.addEventListener('resize', handleScroll);
+    
+    // Run once on mount to set initial state
+    handleScroll();
+    
+    // Cleanup function - removes event listeners when component unmounts
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, []); // Empty dependency array means this effect runs once when component mounts
+  
+  /* 
+  MOBILE VS DESKTOP SCROLL DETECTION:
+  - useEffect is a React Hook for side effects (things that happen outside of rendering)
+  - Side effects include: API calls, event listeners, timers, DOM manipulation
+  - First parameter: function to run (the effect)
+  - Second parameter: dependency array - when to re-run the effect
+  - Empty array [] means run once when component mounts
+  - Cleanup function prevents memory leaks by removing event listeners
+  
+  DESKTOP LOGIC (lg: 1024px+):
+  - Features and images are side-by-side (two-column layout)
+  - Tracks scroll progress through entire features section
+  - Conservative triggers: waits until section is 30% into viewport
+  - Longer first image duration: switches only after 70% progress
+  - Users see both features and images simultaneously
+  
+  MOBILE/TABLET LOGIC (< 1024px):
+  - Features are above images (single-column layout)
+  - Users scroll through ALL features first, THEN see images
+  - Only starts tracking when image container comes into view (80% threshold)
+  - Tracks scroll progress specifically through image area
+  - Switches images based on progress through image viewing area
+  - Prevents premature image changes while reading features
+  
+  WHY DIFFERENT LOGIC IS NEEDED:
+  - Desktop: Side-by-side layout allows simultaneous feature/image viewing
+  - Mobile: Stacked layout means features are consumed before images
+  - Mobile users need first image when they reach image area
+  - Then smooth transition to second image as they continue scrolling
+  - Handles orientation changes with resize listener
+  */
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-950 text-slate-900 dark:text-slate-100">
       {/* ANIMATED BACKGROUND BLOBS */}
@@ -12,20 +148,232 @@ export default function Home() {
       </div>
 
       {/* HEADER/NAVIGATION BAR */}
+      {/* This is the top navigation that stays visible when scrolling */}
+      {/* 
+      WHAT IS A HEADER?
+      - <header> is an HTML5 semantic element that represents introductory content
+      - Semantic = has meaning beyond just styling (helps screen readers and search engines)
+      - Usually contains navigation, logo, and main site information
+      */}
       <header className="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg">
+        {/* 
+        BREAKDOWN OF HEADER CLASSES:
+        - sticky = CSS position: sticky - sticks to top when user scrolls past it
+        - top-0 = when sticky, stay 0px from top of viewport
+        - z-50 = z-index: 50 - high value ensures header appears above other content
+        - w-full = width: 100% - takes full width of parent
+        - border-b = border-bottom - adds bottom border
+        - border-slate-200 = light gray border color in light mode
+        - dark:border-slate-800 = dark gray border color in dark mode
+        - bg-white/80 = background: white with 80% opacity (20% transparent)
+        - dark:bg-slate-900/80 = background: dark gray with 80% opacity in dark mode
+        - backdrop-blur-lg = CSS backdrop-filter: blur() - blurs content behind this element
+        
+        STICKY POSITIONING EXPLANATION:
+        - Element behaves like "relative" until it would scroll out of view
+        - Then it becomes "fixed" and sticks to the specified position
+        - Creates a floating navigation effect
+        
+        BACKDROP BLUR EXPLANATION:
+        - Blurs whatever is behind the header as you scroll
+        - Creates a frosted glass effect
+        - Makes text readable even with content scrolling behind
+        */}
+        
+        {/* CONTAINER FOR CENTERING AND PADDING */}
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          {/* 
+          BREAKDOWN OF CONTAINER CLASSES:
+          - container = Tailwind utility that sets max-width based on screen size
+            - Small screens: 100% width
+            - Medium screens: 768px max width
+            - Large screens: 1024px max width
+            - Extra large: 1280px max width
+          - mx-auto = margin-left: auto, margin-right: auto - centers the container horizontally
+          - px-4 = padding-left: 16px, padding-right: 16px (horizontal padding)
+          - sm:px-6 = on small screens and up, use 24px horizontal padding
+          - lg:px-8 = on large screens and up, use 32px horizontal padding
+          
+          RESPONSIVE DESIGN EXPLANATION:
+          - Different screen sizes need different spacing
+          - Small phones need less padding (conserve space)
+          - Large desktops can handle more padding (looks better)
+          - sm:, md:, lg:, xl: are breakpoints (screen size triggers)
+          */}
+          
+          {/* FLEX CONTAINER FOR LOGO, MOBILE BUTTON, AND NAVIGATION */}
           <div className="flex h-16 items-center justify-between">
+            {/* 
+            BREAKDOWN OF FLEX CONTAINER CLASSES:
+            - flex = display: flex - creates flexible layout container
+            - h-16 = height: 64px - fixed height for the header bar
+            - items-center = align-items: center - vertically centers child elements
+            - justify-between = justify-content: space-between - pushes children to opposite ends
+            
+            FLEXBOX EXPLANATION:
+            - Flexbox is a CSS layout method for arranging elements
+            - Main axis = horizontal direction (left to right)
+            - Cross axis = vertical direction (top to bottom)
+            - justify-content controls main axis positioning
+            - align-items controls cross axis positioning
+            - space-between puts maximum space between items
+            */}
+            
+            {/* LOGO SECTION */}
             <Link href="#" className="flex items-center space-x-3 group">
+              {/* 
+              LINK COMPONENT EXPLANATION:
+              - Link is from Next.js, not regular HTML <a> tag
+              - href="#" means clicking goes to top of page (# = fragment identifier)
+              - In a real site, this might go to "/" (home page)
+              
+              BREAKDOWN OF LINK CLASSES:
+              - flex = makes logo and text sit side by side
+              - items-center = vertically centers icon and text
+              - space-x-3 = adds 12px horizontal space between child elements
+              - group = enables group hover effects (hover parent affects children)
+              
+              GROUP HOVER EXPLANATION:
+              - Normally CSS :hover only affects the element being hovered
+              - Tailwind's "group" class lets you style child elements when parent is hovered
+              - Child elements use "group-hover:" prefix for these effects
+              */}
+              
+              {/* LOGO ICON CONTAINER */}
               <div className="relative">
+                {/* 
+                RELATIVE POSITIONING:
+                - relative = CSS position: relative - positioned relative to its normal position
+                - Allows child elements with "absolute" positioning to be positioned relative to this container
+                - The icon container needs this for the glow effect behind it
+                */}
+                
+                {/* GLOWING EFFECT BEHIND THE LOGO ICON */}
                 <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 opacity-20 blur-md group-hover:opacity-30 transition-opacity" />
+                {/* 
+                BREAKDOWN OF GLOW EFFECT CLASSES:
+                - absolute = positioned absolutely within the relative parent
+                - inset-0 = covers entire parent (top: 0, right: 0, bottom: 0, left: 0)
+                - rounded-full = perfect circle shape
+                - bg-gradient-to-br = background gradient "to bottom right" (diagonal)
+                - from-blue-600 = gradient starts with medium blue
+                - to-indigo-600 = gradient ends with medium indigo
+                - opacity-20 = 20% visible by default
+                - blur-md = medium blur effect
+                - group-hover:opacity-30 = becomes 30% visible when parent is hovered
+                - transition-opacity = smoothly animates opacity changes
+                
+                TRANSITION EXPLANATION:
+                - CSS transitions animate changes between property values
+                - Instead of instant changes, properties gradually change over time
+                - Creates smooth, professional animations
+                */}
+                
+                {/* LIGHTNING BOLT ICON FROM LUCIDE */}
                 <Zap className="relative h-8 w-8 text-blue-600 dark:text-blue-500" />
+                {/* 
+                COMPONENT USAGE EXPLANATION:
+                - <Zap> is a React component (imported from lucide-react)
+                - Components are like custom HTML elements
+                - They can accept props (properties) like className
+                
+                BREAKDOWN OF ICON CLASSES:
+                - relative = ensures icon appears above the glow effect
+                - h-8 = height: 32px
+                - w-8 = width: 32px (makes it square)
+                - text-blue-600 = SVG fill color: medium blue in light mode
+                - dark:text-blue-500 = SVG fill color: slightly lighter blue in dark mode
+                
+                WHY RELATIVE POSITIONING HERE?
+                - The glow effect has absolute positioning and covers the same area
+                - relative positioning ensures the icon appears on top of the glow
+                - Without this, the glow might cover the icon
+                */}
               </div>
+              
+              {/* COMPANY NAME TEXT */}
               <span className="text-xl font-bold text-slate-900 dark:text-white">
+                {/* 
+                SPAN ELEMENT EXPLANATION:
+                - <span> is an inline HTML element used for styling text
+                - Unlike <div>, it doesn&apos;t create a new line
+                - Perfect for styling part of a text or single words
+                
+                BREAKDOWN OF TEXT CLASSES:
+                - text-xl = font-size: 20px (extra large text)
+                - font-bold = font-weight: 700 (bold text)
+                - text-slate-900 = very dark gray text color in light mode
+                - dark:text-white = white text in dark mode
+                */}
                 MatAstra
+                {/* This is the actual company name text that appears on the website */}
               </span>
             </Link>
             
-            {/* NAVIGATION MENU */}
+            {/* MOBILE MENU BUTTON */}
+            {/* This button is visible on mobile devices and hidden on larger screens */}
+            <button
+              onClick={toggleMobileMenu}
+              className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-slate-400 hover:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              aria-label="Toggle navigation menu"
+              aria-expanded={isMobileMenuOpen}
+            >
+              {/* 
+              MOBILE MENU BUTTON EXPLANATION:
+              - Shows hamburger icon when menu is closed, X icon when open
+              - Only visible on mobile devices (hidden on desktop)
+              - Toggles mobile menu open/closed when clicked
+              
+              BREAKDOWN OF BUTTON CLASSES:
+              - md:hidden = hidden on medium screens and up (only shows on mobile)
+              - inline-flex = display: inline-flex - flexible inline container
+              - items-center = align-items: center - vertically centers icon
+              - justify-center = justify-content: center - horizontally centers icon
+              - p-2 = padding: 8px - padding on all sides
+              - rounded-md = border-radius: 6px - medium rounded corners
+              - text-slate-400 = medium gray icon color
+              - hover:text-slate-500 = darker gray on hover
+              - hover:bg-slate-100 = light gray background on hover in light mode
+              - dark:hover:bg-slate-800 = dark gray background on hover in dark mode
+              - focus:outline-none = removes default browser focus outline
+              - focus:ring-2 = adds 2px focus ring for keyboard users
+              - focus:ring-blue-500 = blue focus ring color
+              - transition-colors = smooth color transitions
+              
+              ACCESSIBILITY ATTRIBUTES:
+              - aria-label = describes button for screen readers
+              - aria-expanded = tells screen readers if menu is open/closed
+              - onClick = JavaScript function called when button is clicked
+              
+              RESPONSIVE DESIGN STRATEGY:
+              - Mobile: Show hamburger button, hide navigation links
+              - Desktop: Hide hamburger button, show navigation links
+              - Clean, uncluttered experience on each device type
+              */}
+              
+              {/* CONDITIONAL ICON RENDERING */}
+              {isMobileMenuOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
+              {/* 
+              CONDITIONAL RENDERING EXPLANATION:
+              - Uses JavaScript ternary operator: condition ? ifTrue : ifFalse
+              - If isMobileMenuOpen is true, show X (close) icon
+              - If isMobileMenuOpen is false, show Menu (hamburger) icon
+              - Provides visual feedback about menu state
+              - X icon suggests "close this menu"
+              - Hamburger icon suggests "open menu"
+              
+              ICON SIZING:
+              - h-6 w-6 = 24px x 24px - good size for touch targets
+              - Large enough to be easily tappable on mobile
+              - Not so large as to overwhelm the header
+              */}
+            </button>
+            
+            {/* DESKTOP NAVIGATION MENU */}
             {/* This menu is hidden on mobile devices and shown on medium screens and larger */}
             <nav className="hidden md:flex items-center space-x-8">
               {/* 
@@ -35,7 +383,7 @@ export default function Home() {
               - Improves accessibility and SEO (Search Engine Optimization)
               
               BREAKDOWN OF NAV CLASSES:
-              - hidden = display: none - completely hides the element
+              - hidden = display: none - completely hides the element on mobile
               - md:flex = on medium screens and up (768px+), display: flex
               - items-center = align-items: center - vertically centers all navigation items
               - space-x-8 = adds 32px horizontal space between each child element
@@ -114,7 +462,7 @@ export default function Home() {
                 - Usually contrasts with regular navigation links
                 
                 BREAKDOWN OF BUTTON CLASSES:
-                - inline-flex = display: inline-flex - flexible layout that stays inline with text
+                - inline-flex = display: inline-flex - flexible inline container
                 - h-9 = height: 36px - fixed height for consistent button size
                 - items-center = align-items: center - vertically centers button text
                 - justify-center = justify-content: center - horizontally centers button text
@@ -150,6 +498,151 @@ export default function Home() {
             </nav>
           </div>
         </div>
+        
+        {/* MOBILE MENU DROPDOWN */}
+        {/* This menu slides down on mobile when hamburger button is clicked */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+            {/* 
+            MOBILE MENU DROPDOWN EXPLANATION:
+            - Only renders when isMobileMenuOpen is true
+            - Uses conditional rendering with && operator
+            - Hidden on desktop (md:hidden) - only for mobile devices
+            
+            CONDITIONAL RENDERING:
+            - {isMobileMenuOpen && <component>} means:
+            - If isMobileMenuOpen is true, render the component
+            - If isMobileMenuOpen is false, render nothing
+            - This is React's way of showing/hiding elements
+            
+            BREAKDOWN OF MOBILE MENU CLASSES:
+            - md:hidden = hidden on medium screens and up (desktop)
+            - border-t = border-top-width: 1px - top border to separate from header
+            - border-slate-200 = light gray border in light mode
+            - dark:border-slate-800 = dark gray border in dark mode
+            - bg-white = white background in light mode
+            - dark:bg-slate-900 = dark gray background in dark mode
+            
+            MOBILE MENU DESIGN STRATEGY:
+            - Appears below header when opened
+            - Full width for easy touch navigation
+            - Clear visual separation from header content
+            - Matches header styling for consistency
+            */}
+            
+            {/* MOBILE MENU CONTENT CONTAINER */}
+            <div className="px-4 py-3 space-y-1">
+              {/* 
+              MOBILE MENU CONTAINER:
+              - px-4 = padding-left: 16px, padding-right: 16px - horizontal padding
+              - py-3 = padding-top: 12px, padding-bottom: 12px - vertical padding
+              - space-y-1 = adds 4px vertical margin between child elements
+              - Creates comfortable spacing for touch navigation
+              */}
+              
+              {/* MOBILE NAVIGATION LINKS */}
+              {/* Same destinations as desktop nav, but styled for mobile */}
+              
+              <Link
+                href="#technology"
+                onClick={closeMobileMenu}
+                className="block px-3 py-2 text-base font-medium text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-md transition-colors"
+              >
+                {/* 
+                MOBILE LINK EXPLANATION:
+                - onClick={closeMobileMenu} closes menu when link is clicked
+                - Provides good UX - menu doesn&apos;t stay open after navigation
+                
+                BREAKDOWN OF MOBILE LINK CLASSES:
+                - block = display: block - takes full width (easier to tap)
+                - px-3 = padding-left: 12px, padding-right: 12px - horizontal padding
+                - py-2 = padding-top: 8px, padding-bottom: 8px - vertical padding
+                - text-base = font-size: 16px - larger than desktop nav for mobile
+                - font-medium = font-weight: 500 - medium weight
+                - text-slate-700 = dark gray text in light mode
+                - dark:text-slate-300 = light gray text in dark mode
+                - hover:text-blue-600 = blue text on hover in light mode
+                - dark:hover:text-blue-400 = lighter blue text on hover in dark mode
+                - hover:bg-slate-50 = light gray background on hover in light mode
+                - dark:hover:bg-slate-800 = dark gray background on hover in dark mode
+                - rounded-md = border-radius: 6px - rounded corners
+                - transition-colors = smooth color transitions
+                
+                MOBILE LINK DESIGN:
+                - Larger text for better readability on small screens
+                - Full-width tap targets for easier interaction
+                - Background color change on hover/tap for feedback
+                - Generous padding for comfortable touch interaction
+                */}
+                Technology
+              </Link>
+              
+              <Link
+                href="#features"
+                onClick={closeMobileMenu}
+                className="block px-3 py-2 text-base font-medium text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-md transition-colors"
+              >
+                Features
+              </Link>
+              
+              <Link
+                href="#solutions"
+                onClick={closeMobileMenu}
+                className="block px-3 py-2 text-base font-medium text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-md transition-colors"
+              >
+                Solutions
+              </Link>
+              
+              <Link
+                href="#contact"
+                onClick={closeMobileMenu}
+                className="block px-3 py-2 text-base font-medium text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-md transition-colors"
+              >
+                Contact
+              </Link>
+              
+              {/* MOBILE CTA BUTTON */}
+              <Link
+                href="#demo"
+                onClick={closeMobileMenu}
+                className="block mt-4 px-3 py-3 text-center bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                {/* 
+                MOBILE CTA BUTTON EXPLANATION:
+                - Styled differently from regular links to maintain hierarchy
+                - Full width button for prominent call-to-action
+                
+                BREAKDOWN OF MOBILE CTA CLASSES:
+                - block = display: block - full width button
+                - mt-4 = margin-top: 16px - extra space above CTA
+                - px-3 = padding-left: 12px, padding-right: 12px - horizontal padding
+                - py-3 = padding-top: 12px, padding-bottom: 12px - larger vertical padding
+                - text-center = text-align: center - centers button text
+                - bg-blue-600 = medium blue background
+                - text-white = white text color
+                - font-medium = font-weight: 500 - medium weight
+                - rounded-lg = border-radius: 8px - rounded corners
+                - hover:bg-blue-700 = darker blue on hover
+                - transition-colors = smooth color transitions
+                
+                MOBILE CTA STRATEGY:
+                - More prominent than regular links
+                - Easy to tap with generous padding
+                - Stands out visually with background color
+                - Maintains brand consistency with desktop version
+                */}
+                Request Demo
+              </Link>
+            </div>
+          </div>
+        )}
+        {/* 
+        MOBILE MENU CLOSING EXPLANATION:
+        - Menu automatically closes when user clicks any navigation link
+        - closeMobileMenu function sets isMobileMenuOpen to false
+        - React re-renders component, hiding the mobile menu
+        - Provides smooth user experience
+        */}
       </header>
 
       {/* MAIN CONTENT AREA */}
@@ -247,7 +740,7 @@ export default function Home() {
                   - Often used to highlight new features or benefits
                   
                   BREAKDOWN OF BADGE CLASSES:
-                  - inline-flex = display: inline-flex - flexible layout that doesn't take full width
+                  - inline-flex = display: inline-flex - flexible layout that doesn&apos;t take full width
                   - items-center = align-items: center - vertically centers icon and text
                   - rounded-full = border-radius: 9999px - creates pill/capsule shape
                   - border = border-width: 1px - adds border
@@ -356,7 +849,7 @@ export default function Home() {
                     
                     ARBITRARY VALUE NOTATION:
                     - [600px] is an arbitrary value in Tailwind
-                    - When standard utilities don't fit, use [exact-value]
+                    - When standard utilities don&apos;t fit, use [exact-value]
                     - max-w-[600px] sets exact max-width of 600px
                     
                     OPTIMAL LINE LENGTH:
@@ -476,16 +969,18 @@ export default function Home() {
                 <div className="relative aspect-[4/3] overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950 shadow-xl">
                   <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-indigo-500/5" />
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center">
+                    {/* <div className="text-center">
                       <Network className="h-32 w-32 text-slate-300 dark:text-slate-700 mb-4 mx-auto animate-pulse-slow" />
                       <p className="text-slate-500 dark:text-slate-600 text-sm">Power Grid Visualization Placeholder</p>
-                    </div>
+                    </div> */}
+                      <img src="/power-lines.jpg" alt="PMU" className="relative mx-auto w-full h-full max-w-[600px] lg:max-w-none animate-fade-in" />
                   </div>
-                  <div className="absolute top-10 left-10 h-2 w-2 rounded-full bg-blue-500 animate-ping" />
+                  {/* <div className="absolute top-10 left-10 h-2 w-2 rounded-full bg-blue-500 animate-ping" />
                   <div className="absolute top-20 right-20 h-2 w-2 rounded-full bg-indigo-500 animate-ping animation-delay-2000" />
-                  <div className="absolute bottom-20 left-20 h-2 w-2 rounded-full bg-blue-500 animate-ping animation-delay-4000" />
+                  <div className="absolute bottom-20 left-20 h-2 w-2 rounded-full bg-blue-500 animate-ping animation-delay-4000" /> */}
                 </div>
               </div>
+            
             </div>
           </div>
         </section>
@@ -765,7 +1260,7 @@ export default function Home() {
                 <h3 className="mb-2 text-xl font-bold text-slate-900 dark:text-white">Unsupervised AI Insights</h3>
                 
                 <p className="text-sm text-slate-600 dark:text-slate-400">
-                  Machine learning models provide autonomous insights without manual configuration, adapting to your grid's unique characteristics.
+                  Machine learning models provide autonomous insights without manual configuration, adapting to your grid&apos;s unique characteristics.
                 </p>
               </div>
             </div>
@@ -831,7 +1326,7 @@ export default function Home() {
               <p className="mt-4 max-w-[700px] text-slate-600 dark:text-slate-400 text-lg">
                 {/* Same description styling pattern as other sections */}
                 
-                Watch how MatAstra's real-time monitoring system detects power grid oscillations and prevents potential blackouts before they occur.
+                Watch how MatAstra&apos;s real-time monitoring system detects power grid oscillations and prevents potential blackouts before they occur.
                 {/* Description that sets expectations for the video content */}
               </p>
             </div>
@@ -851,7 +1346,7 @@ export default function Home() {
                 {/* 
                 VIDEO WRAPPER EXPLANATION:
                 - Contains the actual video player and maintains aspect ratio
-                - Important for responsive video that doesn't break layout
+                - Important for responsive video that doesn&apos;t break layout
                 
                 BREAKDOWN OF VIDEO WRAPPER CLASSES:
                 - relative = CSS position: relative - allows absolute positioning of children
@@ -1029,7 +1524,7 @@ export default function Home() {
                 - controls attribute adds play/pause/volume controls
                 - poster attribute shows thumbnail image before video plays
                 - Multiple <source> elements provide different video formats
-                - Fallback text shows if browser doesn't support video
+                - Fallback text shows if browser doesn&apos;t support video
                 - object-cover ensures video fills container without distortion
                 
                 VIDEO FORMAT STRATEGY:
@@ -1071,75 +1566,371 @@ export default function Home() {
         </section>
 
         {/* FEATURES SECTION */}
+        {/* This section has scrolling feature cards on the left and sticky images on the right */}
         <section id="features" className="w-full py-20 md:py-28 bg-white dark:bg-slate-950">
+          {/* 
+          SCROLL-TRIGGERED FEATURES SECTION EXPLANATION:
+          - Left side: Feature cards that scroll normally
+          - Right side: Sticky images that change based on scroll position
+          - Creates engaging, interactive experience as user scrolls
+          - Modern design pattern used by top tech companies
+          
+          SECTION STYLING:
+          - w-full = width: 100% - takes full width
+          - py-20 = padding-top: 80px, padding-bottom: 80px - vertical spacing
+          - md:py-28 = on medium screens+, padding-top: 112px, padding-bottom: 112px
+          - bg-white = white background in light mode
+          - dark:bg-slate-950 = very dark background in dark mode
+          */}
+          
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            {/* Same container pattern for consistent site-wide spacing */}
+            
+            {/* SECTION HEADER */}
             <div className="flex flex-col items-center text-center mb-16">
+              {/* 
+              SECTION HEADER STRUCTURE:
+              - Consistent with other sections (badge + title + description)
+              - mb-16 = margin-bottom: 64px - space before content
+              - Centers all header content
+              */}
+              
+              {/* SECTION BADGE */}
               <div className="inline-flex items-center rounded-full border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/50 px-3 py-1 text-sm text-blue-700 dark:text-blue-300 mb-4">
+                {/* Same badge styling pattern as other sections */}
+                
                 <Zap className="mr-2 h-3.5 w-3.5" />
+                {/* 
+                ZAP ICON:
+                - Represents energy, power, key features
+                - mr-2 = margin-right: 8px - space between icon and text
+                - h-3.5 w-3.5 = 14px x 14px - consistent badge icon size
+                */}
+                
                 Key Features
+                {/* Badge text indicating this shows main features */}
               </div>
+              
+              {/* SECTION HEADING */}
               <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl text-slate-900 dark:text-white">
+                {/* Same heading styling pattern as other sections */}
+                
                 Comprehensive Grid Protection
+                {/* Clear, descriptive heading */}
               </h2>
+              
+              {/* SECTION DESCRIPTION */}
               <p className="mt-4 max-w-[700px] text-slate-600 dark:text-slate-400 text-lg">
+                {/* Same description styling pattern as other sections */}
+                
                 A complete solution for preventing power grid failures and optimizing system performance.
+                {/* Description that explains the value proposition */}
               </p>
             </div>
             
-            <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-2">
-              <div className="flex gap-4 animate-fade-in-left">
-                <div className="flex-shrink-0">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-950">
-                    <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                  </div>
-                </div>
-                <div>
-                  <h3 className="mb-2 text-xl font-bold text-slate-900 dark:text-white">Real-Time Monitoring</h3>
-                  <p className="text-slate-600 dark:text-slate-400">
-                    Continuous analysis of PMU data streams with sub-second latency. Monitor grid health 24/7 with instant anomaly detection and alerting capabilities.
-                  </p>
-                </div>
-              </div>
+            {/* MAIN CONTENT: FEATURES + STICKY IMAGES */}
+            <div className="relative">
+              {/* 
+              RELATIVE CONTAINER:
+              - relative = CSS position: relative - allows absolute positioning of children
+              - Contains both the scrolling features and sticky images
+              - Provides positioning context for sticky elements
+              */}
               
-              <div className="flex gap-4 animate-fade-in-right">
-                <div className="flex-shrink-0">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-950">
-                    <AlertTriangle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              {/* TWO-COLUMN LAYOUT */}
+              <div className="grid gap-16 lg:grid-cols-2 items-start">
+                {/* 
+                GRID LAYOUT EXPLANATION:
+                - grid = display: grid - creates CSS grid container
+                - gap-16 = gap: 64px - space between columns
+                - lg:grid-cols-2 = 2 columns on large screens (laptop+)
+                - items-start = align-items: start - aligns items to top
+                
+                RESPONSIVE STRATEGY:
+                - Mobile/Tablet: Single column (stacked vertically)
+                - Desktop: Two columns (side by side)
+                - Content reflows automatically based on screen size
+                */}
+                
+                {/* LEFT COLUMN - SCROLLING FEATURE CARDS */}
+                <div className="space-y-12">
+                  {/* 
+                  FEATURES CONTAINER:
+                  - space-y-12 = adds 48px vertical margin between feature cards
+                  - Creates comfortable reading rhythm
+                  - Cards scroll normally with page content
+                  */}
+                  
+                  {/* FEATURE CARD 1 - REAL-TIME MONITORING */}
+                  <div className="flex gap-6 animate-fade-in-left">
+                    {/* 
+                    FEATURE CARD LAYOUT:
+                    - flex = display: flex - horizontal layout
+                    - gap-6 = gap: 24px - space between icon and content
+                    - animate-fade-in-left = custom animation from left
+                    */}
+                    
+                    {/* FEATURE ICON */}
+                    <div className="flex-shrink-0">
+                      {/* flex-shrink-0 = prevents icon from shrinking */}
+                      
+                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-950">
+                        {/* 
+                        ICON CONTAINER:
+                        - h-12 w-12 = 48px x 48px - consistent icon size
+                        - rounded-lg = border-radius: 8px - rounded corners
+                        - bg-blue-100 = very light blue background in light mode
+                        - dark:bg-blue-950 = very dark blue background in dark mode
+                        */}
+                        
+                        <Clock className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                        {/* 
+                        CLOCK ICON:
+                        - Represents real-time, continuous monitoring
+                        - h-6 w-6 = 24px x 24px - appropriate size for container
+                        - text-blue-600 = medium blue in light mode
+                        - dark:text-blue-400 = lighter blue in dark mode
+                        */}
+                      </div>
+                    </div>
+                    
+                    {/* FEATURE CONTENT */}
+                    <div className="flex-1">
+                      {/* flex-1 = takes remaining space after icon */}
+                      
+                      <h3 className="mb-3 text-xl font-bold text-slate-900 dark:text-white">Real-Time Monitoring</h3>
+                      {/* 
+                      FEATURE TITLE:
+                      - mb-3 = margin-bottom: 12px - space below title
+                      - text-xl = font-size: 20px - prominent heading
+                      - font-bold = font-weight: 700 - bold for emphasis
+                      */}
+                      
+                      <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
+                        {/* 
+                        FEATURE DESCRIPTION:
+                        - text-slate-600 = medium gray in light mode
+                        - dark:text-slate-400 = light gray in dark mode
+                        - leading-relaxed = line-height: 1.625 - comfortable reading
+                        */}
+                        
+                        Continuous analysis of PMU data streams with sub-second latency. Monitor grid health 24/7 with instant anomaly detection and alerting capabilities.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* FEATURE CARD 2 - OSCILLATION DETECTION */}
+                  <div className="flex gap-6 animate-fade-in-left animation-delay-200">
+                    {/* animation-delay-200 = delays animation by 200ms for staggered effect */}
+                    
+                    <div className="flex-shrink-0">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-950">
+                        <AlertTriangle className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                        {/* AlertTriangle icon represents warning, detection, safety */}
+                      </div>
+                    </div>
+                    
+                    <div className="flex-1">
+                      <h3 className="mb-3 text-xl font-bold text-slate-900 dark:text-white">Oscillation Detection</h3>
+                      <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
+                        Identify dangerous oscillation patterns before they escalate. Our algorithms detect both forced and natural oscillations across all frequency ranges.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* FEATURE CARD 3 - PREDICTIVE ANALYTICS */}
+                  <div className="flex gap-6 animate-fade-in-left animation-delay-400">
+                    {/* animation-delay-400 = delays animation by 400ms for further staggering */}
+                    
+                    <div className="flex-shrink-0">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-950">
+                        <TrendingUp className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                        {/* TrendingUp icon represents growth, prediction, analytics */}
+                      </div>
+                    </div>
+                    
+                    <div className="flex-1">
+                      <h3 className="mb-3 text-xl font-bold text-slate-900 dark:text-white">Predictive Analytics</h3>
+                      <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
+                        AI-powered predictions identify potential failures days or weeks in advance. Schedule maintenance proactively and prevent costly outages.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* FEATURE CARD 4 - BLACKOUT PREVENTION */}
+                  <div className="flex gap-6 animate-fade-in-left animation-delay-600">
+                    {/* animation-delay-600 = delays animation by 600ms for maximum staggering */}
+                    
+                    <div className="flex-shrink-0">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-950">
+                        <Shield className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                        {/* Shield icon represents protection, security, prevention */}
+                      </div>
+                    </div>
+                    
+                    <div className="flex-1">
+                      <h3 className="mb-3 text-xl font-bold text-slate-900 dark:text-white">Blackout Prevention</h3>
+                      <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
+                        Advanced algorithms identify cascading failure risks and provide actionable recommendations to prevent system-wide blackouts.
+                      </p>
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <h3 className="mb-2 text-xl font-bold text-slate-900 dark:text-white">Oscillation Detection</h3>
-                  <p className="text-slate-600 dark:text-slate-400">
-                    Identify dangerous oscillation patterns before they escalate. Our algorithms detect both forced and natural oscillations across all frequency ranges.
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex gap-4 animate-fade-in-left animation-delay-200">
-                <div className="flex-shrink-0">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-950">
-                    <TrendingUp className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                
+                {/* RIGHT COLUMN - STICKY IMAGES */}
+                <div className="relative mt-12 lg:mt-0 lg:sticky lg:top-24 lg:flex lg:items-center" data-image-container>
+                  {/* 
+                  STICKY CONTAINER EXPLANATION:
+                  - mt-12 = margin-top: 48px on mobile (space from features)
+                  - lg:mt-0 = removes top margin on desktop
+                  - relative = CSS position: relative on mobile
+                  - lg:sticky = CSS position: sticky on large screens
+                  - lg:top-24 = when sticky, stay 96px from top (below header)
+                  - lg:flex lg:items-center = centers content vertically on large screens
+                  
+                  STICKY BEHAVIOR:
+                  - On mobile: Images scroll normally with content
+                  - On desktop: Images stick to viewport while features scroll
+                  - Creates the "fixed" appearance while content scrolls
+                  - Images change based on scroll position
+                  */}
+                  
+                  <div className="w-full">
+                    {/* Full width container for proper mobile layout */}
+                    
+                    {/* IMAGE CONTAINER */}
+                    <div className="relative w-full aspect-[16/10] rounded-xl overflow-hidden shadow-2xl bg-slate-100 dark:bg-slate-800">
+                      {/* 
+                      IMAGE CONTAINER:
+                      - relative = allows absolute positioning of images
+                      - w-full = width: 100% - takes full width of column
+                      - aspect-[16/10] = 16:10 aspect ratio (wider, larger images)
+                      - rounded-xl = border-radius: 12px - large rounded corners
+                      - overflow-hidden = clips images to rounded corners
+                      - shadow-2xl = very large shadow for dramatic depth
+                      - bg-slate-100 = background color while images load
+                      */}
+                      
+                      {/* FIRST IMAGE */}
+                      <img
+                        src="/mode-shape.webp"
+                        alt="Real-time mode-shape extraction visualization showing power grid dynamics"
+                        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${
+                          activeImageIndex === 0 ? 'opacity-100' : 'opacity-0'
+                        }`}
+                      />
+                      {/* 
+                      FIRST IMAGE EXPLANATION:
+                      - absolute inset-0 = covers entire container
+                      - w-full h-full = takes full width and height
+                      - object-cover = scales image to cover container while maintaining aspect ratio
+                      - transition-opacity duration-700 = smooth 700ms fade transition
+                      - Conditional opacity based on activeImageIndex state
+                      */}
+                      
+                      {/* SECOND IMAGE */}
+                      <img
+                        src="/oscillation.webp"
+                        alt="Advanced oscillation detection interface with real-time alerts"
+                        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${
+                          activeImageIndex === 1 ? 'opacity-100' : 'opacity-0'
+                        }`}
+                      />
+                      {/* 
+                      SECOND IMAGE EXPLANATION:
+                      - Same positioning and sizing as first image
+                      - Layered on top using absolute positioning
+                      - Shows when activeImageIndex === 1
+                      - Smooth crossfade effect between images
+                      */}
+                      
+                      {/* IMAGE OVERLAY FOR SUBTLE DEPTH */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent pointer-events-none">
+                        {/* 
+                        SUBTLE OVERLAY:
+                        - Very light overlay for subtle depth
+                        - from-black/10 = 10% black opacity at bottom
+                        - to-transparent = fades to transparent at top
+                        - pointer-events-none = doesn&apos;t block image interaction
+                        */}
+                      </div>
+                    </div>
+                    
+                    {/* IMAGE INDICATORS AND LABELS */}
+                    <div className="mt-6 flex flex-col items-center space-y-3">
+                      {/* 
+                      INDICATORS CONTAINER:
+                      - mt-6 = margin-top: 24px - space above indicators
+                      - flex flex-col = vertical layout
+                      - items-center = centers content horizontally
+                      - space-y-3 = 12px vertical spacing between elements
+                      */}
+                      
+                      {/* INDICATOR DOTS */}
+                      <div className="flex items-center space-x-2">
+                        {/* 
+                        DOTS CONTAINER:
+                        - flex items-center = horizontal layout, vertically centered
+                        - space-x-2 = 8px horizontal spacing between dots
+                        */}
+                        
+                        {[0, 1].map((index) => (
+                          <div
+                            key={index}
+                            className={`w-2 h-2 rounded-full transition-colors duration-300 ${
+                              activeImageIndex === index 
+                                ? 'bg-blue-600 dark:bg-blue-400' 
+                                : 'bg-slate-300 dark:bg-slate-600'
+                            }`}
+                          />
+                        ))}
+                        {/* 
+                        INDICATOR DOTS:
+                        - w-2 h-2 = 8px x 8px - small circular indicators
+                        - rounded-full = perfect circles
+                        - transition-colors duration-300 = smooth color transitions
+                        - Active dot: blue color (bg-blue-600)
+                        - Inactive dots: gray color (bg-slate-300)
+                        */}
+                      </div>
+                      
+                      {/* CURRENT IMAGE LABEL */}
+                      <div className="text-center">
+                        {/* text-center = centers the label text */}
+                        
+                        {activeImageIndex === 0 && (
+                          <div className="text-lg font-semibold text-slate-900 dark:text-white">
+                            Mode-Shape Extraction
+                          </div>
+                        )}
+                        {activeImageIndex === 1 && (
+                          <div className="text-lg font-semibold text-slate-900 dark:text-white">
+                            Oscillation Detection
+                          </div>
+                        )}
+                        {/* 
+                        CONDITIONAL LABELS:
+                        - Shows different label based on active image
+                        - text-lg = font-size: 18px - readable size
+                        - font-semibold = font-weight: 600 - medium bold
+                        - Provides context for what the user is viewing
+                        */}
+                        
+                        <div className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                          {/* 
+                          SUBTITLE STYLING:
+                          - mt-1 = margin-top: 4px - small space above subtitle
+                          - text-sm = font-size: 14px - smaller supporting text
+                          - Lower contrast colors for hierarchy
+                          */}
+                          
+                          {activeImageIndex === 0 && "Real-time visualization of power system dynamics"}
+                          {activeImageIndex === 1 && "Advanced detection with instant alerts"}
+                          {/* Different subtitles for each image */}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <h3 className="mb-2 text-xl font-bold text-slate-900 dark:text-white">Predictive Analytics</h3>
-                  <p className="text-slate-600 dark:text-slate-400">
-                    AI-powered predictions identify potential failures days or weeks in advance. Schedule maintenance proactively and prevent costly outages.
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex gap-4 animate-fade-in-right animation-delay-200">
-                <div className="flex-shrink-0">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-950">
-                    <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                  </div>
-                </div>
-                <div>
-                  <h3 className="mb-2 text-xl font-bold text-slate-900 dark:text-white">Blackout Prevention</h3>
-                  <p className="text-slate-600 dark:text-slate-400">
-                    Advanced algorithms identify cascading failure risks and provide actionable recommendations to prevent system-wide blackouts.
-                  </p>
                 </div>
               </div>
             </div>
@@ -1151,24 +1942,21 @@ export default function Home() {
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
               <div className="order-2 lg:order-1">
-                <div className="relative aspect-square max-w-[500px] mx-auto animate-fade-in">
-                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/10 to-indigo-500/10 blur-3xl" />
-                  <div className="relative h-full w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8">
-                    <div className="grid grid-cols-2 gap-4 h-full">
-                      <div className="space-y-4">
-                        <div className="h-24 rounded-lg bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-950 dark:to-indigo-950 animate-pulse-slow" />
-                        <div className="h-32 rounded-lg bg-gradient-to-br from-indigo-100 to-blue-100 dark:from-indigo-950 dark:to-blue-950 animate-pulse-slow animation-delay-2000" />
-                      </div>
-                      <div className="space-y-4">
-                        <div className="h-32 rounded-lg bg-gradient-to-br from-indigo-100 to-blue-100 dark:from-indigo-950 dark:to-blue-950 animate-pulse-slow animation-delay-4000" />
-                        <div className="h-24 rounded-lg bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-950 dark:to-indigo-950 animate-pulse-slow animation-delay-2000" />
-                      </div>
-                    </div>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <Database className="h-24 w-24 text-slate-200 dark:text-slate-800" />
-                    </div>
+                  <div className="relative mx-auto w-full max-w-[600px] lg:max-w-none animate-fade-in">
+                <div className="relative aspect-[4/3] overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950 shadow-xl">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-indigo-500/5" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    {/* <div className="text-center">
+                      <Network className="h-32 w-32 text-slate-300 dark:text-slate-700 mb-4 mx-auto animate-pulse-slow" />
+                      <p className="text-slate-500 dark:text-slate-600 text-sm">Power Grid Visualization Placeholder</p>
+                    </div> */}
+                      <img src="/workers.jpeg" alt="PMU" className="relative mx-auto w-full h-full max-w-[600px] lg:max-w-none animate-fade-in" />
                   </div>
+                  {/* <div className="absolute top-10 left-10 h-2 w-2 rounded-full bg-blue-500 animate-ping" />
+                  <div className="absolute top-20 right-20 h-2 w-2 rounded-full bg-indigo-500 animate-ping animation-delay-2000" />
+                  <div className="absolute bottom-20 left-20 h-2 w-2 rounded-full bg-blue-500 animate-ping animation-delay-4000" /> */}
                 </div>
+              </div>
               </div>
               
               <div className="order-1 lg:order-2 space-y-8 animate-fade-in-up">
